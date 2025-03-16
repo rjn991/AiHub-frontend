@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
-import { Trash2 } from "lucide-react"; // Import delete icon
+import { Trash2, Plus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +13,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Drawer,
+  DrawerTrigger,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+  DrawerDescription
+} from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface Tool {
   toolId: number;
@@ -23,6 +34,9 @@ interface Tool {
 
 export default function Admin() {
   const [tools, setTools] = useState<Tool[]>([]);
+  const [newTool, setNewTool] = useState({ toolName: "", toolUrl: "", toolImgUrl: "" });
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
   const apiUrl: string = import.meta.env.VITE_API_URL;
 
   const fetchTools = () => {
@@ -39,11 +53,19 @@ export default function Admin() {
   const handleDelete = (toolId: number) => {
     axios
       .delete(`${apiUrl}${toolId}`)
-      .then((response) => {
-        console.log(response)
-        fetchTools(); // Refresh tools list from the API
-      })
+      .then(() => fetchTools())
       .catch((error) => console.error("Error deleting tool:", error));
+  };
+
+  const handleAddTool = () => {
+    axios
+      .post(apiUrl, newTool)
+      .then((response) => {
+        fetchTools();
+        console.log(response);
+        setIsDrawerOpen(false);
+      })
+      .catch((error) => console.error("Error adding tool:", error));
   };
 
   return (
@@ -60,6 +82,53 @@ export default function Admin() {
             {tools.map((tool) => (
               <GridItem key={tool.toolId} tool={tool} onDelete={handleDelete} />
             ))}
+
+            {/* + Card for Adding New Tool */}
+            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+              <DrawerTrigger asChild>
+                <li className="list-none relative cursor-pointer">
+                  <div className="relative h-full rounded-2xl border p-4 shadow-md bg-white dark:bg-neutral-900 flex flex-col justify-center items-center">
+                    <GlowingEffect
+                      blur={0}
+                      borderWidth={3}
+                      spread={80}
+                      glow={true}
+                      disabled={false}
+                      proximity={64}
+                      inactiveZone={0.01}
+                    />
+                    <Plus size={40} className="text-stone-600 dark:text-white" />
+                    <p className="mt-2 text-lg font-semibold text-stone-900 dark:text-white">Add New</p>
+                  </div>
+                </li>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Add New Tool</DrawerTitle>
+                  <DrawerDescription>Set your daily activity goal.</DrawerDescription>
+                </DrawerHeader>
+                <div className="p-4 space-y-4">
+                  <Input
+                    placeholder="Tool Name"
+                    value={newTool.toolName}
+                    onChange={(e) => setNewTool({ ...newTool, toolName: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Tool URL"
+                    value={newTool.toolUrl}
+                    onChange={(e) => setNewTool({ ...newTool, toolUrl: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Tool Image URL"
+                    value={newTool.toolImgUrl}
+                    onChange={(e) => setNewTool({ ...newTool, toolImgUrl: e.target.value })}
+                  />
+                </div>
+                <DrawerFooter>
+                  <Button onClick={handleAddTool}>Add Tool</Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
           </ul>
         </div>
       </div>
@@ -123,7 +192,7 @@ const GridItem = ({ tool, onDelete }: ToolProps) => {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. This will permanently delete
-                  your account and remove your data from our servers.
+                  your tool and remove it from the system.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
