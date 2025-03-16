@@ -2,6 +2,17 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { Trash2 } from "lucide-react"; // Import delete icon
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Tool {
   toolId: number;
@@ -14,34 +25,45 @@ export default function Admin() {
   const [tools, setTools] = useState<Tool[]>([]);
   const apiUrl: string = import.meta.env.VITE_API_URL;
 
-  useEffect(() => {
+  const fetchTools = () => {
     axios
       .get(apiUrl)
       .then((response) => setTools(response.data))
       .catch((error) => console.error("Error fetching tools:", error));
+  };
+
+  useEffect(() => {
+    fetchTools();
   }, []);
 
-  // Function to delete a tool
   const handleDelete = (toolId: number) => {
-    setTools(tools.filter((tool) => tool.toolId !== toolId));
+    axios
+      .delete(`${apiUrl}${toolId}`)
+      .then((response) => {
+        console.log(response)
+        fetchTools(); // Refresh tools list from the API
+      })
+      .catch((error) => console.error("Error deleting tool:", error));
   };
 
   return (
-    <div className="h-full dark:bg-black bg-white dark:bg-grid-small-white/[0.2] bg-grid-small-black/[0.2]">
-      <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+    <>
+      <div className="h-full dark:bg-black bg-white dark:bg-grid-small-white/[0.2] bg-grid-small-black/[0.2]">
+        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
 
-      <div className="min-h-svh flex flex-col items-center">
-        <p className="text-center text-black dark:text-white text-5xl font-semibold py-6">
-          Admin Hub
-        </p>
+        <div className="min-h-svh flex flex-col items-center">
+          <p className="text-center text-black dark:text-white text-5xl font-semibold py-6">
+            Admin Hub
+          </p>
 
-        <ul className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 px-6 pb-6 max-w-6xl">
-          {tools.map((tool) => (
-            <GridItem key={tool.toolId} tool={tool} onDelete={handleDelete} />
-          ))}
-        </ul>
+          <ul className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 px-6 pb-6 max-w-6xl">
+            {tools.map((tool) => (
+              <GridItem key={tool.toolId} tool={tool} onDelete={handleDelete} />
+            ))}
+          </ul>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -90,13 +112,28 @@ const GridItem = ({ tool, onDelete }: ToolProps) => {
         </div>
 
         <div className="ml-auto">
-          <button
-            onClick={() => onDelete(tool.toolId)}
-            className="p-2"
-            aria-label="Delete Tool"
-          >
-            <Trash2 size={20} color="#FF4040" />
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button className="p-2" aria-label="Delete Tool">
+                <Trash2 size={20} color="#FF4040" />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete
+                  your account and remove your data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(tool.toolId)}>
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </li>
